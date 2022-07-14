@@ -15,7 +15,7 @@ setup(
     author='Daniel Rabayda',
     author_email='rabaydadp@gmail.com',
     license='MIT',
-    url='https://github.com/danrabayda/StarScream/tree/main/more/StarScreamLib',
+    url='https://github.com/danrabayda/AudioStudio',
     install_requires=[
         'pydub',
         'ipywidgets',

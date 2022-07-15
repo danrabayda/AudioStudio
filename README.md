@@ -46,6 +46,12 @@ does a quickplot for sequence s and shows a play and save button to play or save
 decimate(s,new_rate,old_rate=44100)
 rough downsampling from one freq to a new lower one, I made this becasue scipy.signal.decimate only does integer downsampling, mine is general
 
+lengthwise_median_filter(sp,res,stride=1)
+median filter in only the lengthwise direction for a greyscale spectrogram. the resolution is the number of pixels lengthwise to include in the filter.
+
+multiple_filter(funcs,params,ai)
+iterates one function f at a time to make f(f(f(a,pi))), where params=[p1,p2,p3]. The number of iterations equal to the length of params & funcs arrays. Available funcs are 'm' (median filter), 'g' (gaussian filter), and 'l' (lengthwise median filter), the params for these specifically are integer filter resolutions.
+
 vdir(directory)
 verify a directory exists, if not make it
 

@@ -3,7 +3,7 @@ from pydub import AudioSegment
 import os
 import io
 import scipy.io.wavfile
-from scipy import signal
+from scipy import signal, ndimage
 import matplotlib.pyplot as plt
 from pydub.playback import play
 import ipywidgets as widgets
@@ -75,6 +75,19 @@ def decimate(s,new_rate,old_rate=44100): #rough downsampling from one freq to a 
             sp+=skp
             new_s.append(s[i])
     return np.array(new_s)
+def lengthwise_median_filter(sp,res,stride=1): #median filter in only the lengthwise direction for a greyscale spectrogram
+    new_sp=np.zeros(sp.shape)
+    pw=(res-stride+1)/2 #same padding
+    sp=np.pad(sp,((0,0),(int(pw),int(np.ceil(pw)))),'edge')
+    for i in range(0,len(sp[0])-res,stride):
+        new_sp[:,i]=np.median(sp[:,i:i+res],axis=-1)
+    return np.array(new_sp)
+def multiple_filter(funcs,params,ai): #iterates a list of single parameter functions on ob with the number of iterations equal to the length of params&or funcs
+    func_d={"m":ndimage.median_filter,"l":lengthwise_median_filter,"g":ndimage.gaussian_filter}
+    a=ai
+    for i in range(len(params)):
+        a=func_d[funcs[i]](a,params[i])
+    return a
 def vdir(directory): #verify a directory exists, if not make it
     if not os.path.exists(directory): os.mkdir(directory)
     return directory

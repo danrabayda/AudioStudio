@@ -8,7 +8,7 @@ long_description = (this_directory / "README.md").read_text()
 setup(
     name='AudioStudio',
     packages=find_packages(include=['AudioStudio']),
-    version='0.0.1',
+    version='0.0.3',
     description='A library for working with audio data',
     long_description=long_description,
     long_description_content_type='text/markdown',

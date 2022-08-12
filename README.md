@@ -57,3 +57,40 @@ verify a directory exists, if not make it
 
 vdirs(directory1,directory2)
 just does vdir(os.path.join(directory1,directory2))
+
+
+### 0.0.3:
+
+vdir_batch(dirs): #batch creates dirs in the current directory and returns a tuple of strings representing their locations
+
+vdirs_batch(parent_dir,subdirs): #batch creates dirs in the parent directory and returns a tuple of strings representing their locations
+
+dropout_filter(sp,thr=0.75): #a filter that drops any pixel values below the threshold thr down to 0, e.g. [0,0.3,0.7,0.8,0.3] would become [0,0,0,0.8,0] for thr=0.75
+
+get_spectrogram_dims(pdict): #returns the default spectrogram dims for a given pdict using scipy's values unless the dims are resized using pdict['rd']
+
+attempt_instantiation(pdict,param_str,except_val): #attempts instantiating param = pdict[param_str] and if there is no pdict entry it sets param=except_val
+
+average_frequency_band_filter(data, pdict): #creates a custom bandpass filter using a spectrogram of the entire data file data_array[dind]=data
+
+scale_arr(arr,sc): #same as decimate but with a range of sc=0.0001 to 1
+
+place_arr(arr,new_size,spos,fill): #places arr inside a new_arr with length new_size>old_size at position spos (0 to 1)
+
+scpl_sp(sp,scales,places): #scale and place spectrogram columns according to set parameters
+
+random_augmenter(sp,deg,sig_prob=0.5): #automatically augments spectrogram sp using sigmoid, linear, expansion and contraction with a degree from 0 to 1 and a probability of sigmoid placements as sig_prob
+
+get_lengths_under_ws(lengths,r_smp,w): #grabs a reverse list of length indices for lengths less than w seconds
+
+pop_lengths_under_ws(metadata,r_smp,w): #pops lengths under w seconds
+
+labels_to_labels_c(labels,classes): #converts raw labels into indices referencing classes
+
+class_grouper(labels_c,times,n_classes): #returns class-grouped metadata (metadata grouped by class). e.g. class_groups[3] contains all the [file, [time]] references for class 3
+
+cg_splitter(class_groups,split): #splits class_groups into train, validation, and test sets
+
+equalize_class_groups(class_groups): #Our generator picks from all available classes with equal probability, so this is a bit unnecessary, only needed if you want to do a final test or validate against research data (like the drone data)
+
+genC_plot(nP,nK,spectrograms,ls,classes,sps=[],files_as_labels=True): #plots generatorC's output

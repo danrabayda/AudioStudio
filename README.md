@@ -59,7 +59,7 @@ vdirs(directory1,directory2)
 just does vdir(os.path.join(directory1,directory2))
 
 
-### 0.0.3:
+### 0.0.4:
 
 vdir_batch(dirs): #batch creates dirs in the current directory and returns a tuple of strings representing their locations
 

@@ -92,8 +92,7 @@ def vdirs(directory1,directory2):
 
 
 def norm_seq_to_spg(s,r_smp,v_res,f_len,t_len,filt=[]):
-    if filt==[]:
-        filt=[0 for i in range(f_len)]
+    if filt==[]: filt=np.zeros(f_len)
     s = normalize_seq(s) #first normalize the window
     sp = sequence_to_spectrogram(s,r_smp,v_res,f_len,t_len) - np.repeat(filt[:,np.newaxis],t_len,axis=1)
     return normalize_spectrogram(sp)

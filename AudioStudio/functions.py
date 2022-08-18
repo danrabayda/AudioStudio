@@ -2,6 +2,7 @@ import numpy as np
 from pydub import AudioSegment
 import os
 import io
+import re
 import scipy.io.wavfile
 from scipy import signal, ndimage
 import matplotlib.pyplot as plt
@@ -201,7 +202,11 @@ def equalize_class_groups(class_groups): #Our generator picks from all available
     for j in range(len(rand_inds)):
         for ind in reversed(rand_inds[j]):
             class_groups[j].pop(ind)
-def genC_plot(nP,nK,spectrograms,ls,classes,sps=[],files_as_labels=True): #plots generatorC's output
+            
+            
+#0.0.5
+def plot_generator(pdict,spectrograms,ls,classes,sps=[],files_as_labels=True):
+    nP, nK = pdict['numP'], pdict['numK']
     fig, ax = plt.subplots(nP, nK, figsize=(20,nP*2))
     for p in range(nP):
         for k in range(nK):
@@ -215,5 +220,32 @@ def genC_plot(nP,nK,spectrograms,ls,classes,sps=[],files_as_labels=True): #plots
                 if files_as_labels:
                     ax[p,k].set_xlabel(str(sps[2*idx]))
                 else:
-                    ax[p,k].set_xlabel(""+str(sps[2*idx])+"    "+str(sps[2*idx+1]//(44100*60)))
+                    ax[p,k].set_xlabel(""+str(sps[2*idx])+"    "+str(sps[2*idx+1]//(pdict['r_smp']*60)))
         ax[p,0].set_ylabel(classes[label])
+def batch_attempt_instantiation(pdict,params,exceptions):
+    return (attempt_instantiation(pdict,params[i],exceptions[i]) for i in range(len(params)))
+def param2name(pdict):
+    name = []
+    for key in pdict.keys():
+        if type(pdict[key]) is list:
+            name.append(f'{key}:{"x".join(map(str, pdict[key]))}')
+        else:
+            name.append(f'{key}:{pdict[key]}')
+    return '|'.join(name)
+def name2param(name):
+    regnumber = re.compile(r'^\d+(\.\d+)?$')
+    pdict = dict([p.split(':') for p in name.split('|')])
+    for key in pdict.keys():
+        if regnumber.match(pdict[key]):
+            try:
+                pdict[key] = int(pdict[key])
+            except:
+                pdict[key] = float(pdict[key])
+        else:
+            if 'x' in pdict[key][:-1]:
+                pdict[key] = list(map(int, pdict[key].split('x')))
+            try:
+                pdict[key] = float(pdict[key])
+            except:
+                pass
+    return pdict

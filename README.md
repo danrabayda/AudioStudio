@@ -93,4 +93,10 @@ cg_splitter(class_groups,split): #splits class_groups into train, validation, an
 
 equalize_class_groups(class_groups): #Our generator picks from all available classes with equal probability, so this is a bit unnecessary, only needed if you want to do a final test or validate against research data (like the drone data)
 
-genC_plot(nP,nK,spectrograms,ls,classes,sps=[],files_as_labels=True): #plots generatorC's output
+#legacy: genC_plot(nP,nK,spectrograms,ls,classes,sps=[],files_as_labels=True)
+
+# 0.0.5
+def plot_generator(pdict,spectrograms,ls,classes,sps=[],files_as_labels=True): #replaces genC_plot, plots generator's output
+batch_attempt_instantiation(pdict,params,exceptions): #attempt_instantiation on a batch 
+param2name(pdict): #takes in pdict and generates a name string
+name2param(name): #takes in the name string and returns a pdict

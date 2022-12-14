@@ -21,6 +21,7 @@ setup(
         'ipywidgets',
         'numpy',
         'scipy',
+        'sklearn',
         'matplotlib',
         'IPython',
       ],

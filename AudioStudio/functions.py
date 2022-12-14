@@ -1,69 +1,96 @@
 import numpy as np
-from pydub import AudioSegment
-import os
-import io
-import re
+import os, io, re
 import scipy.io.wavfile
 from scipy import signal, ndimage
+from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-from pydub.playback import play
 import ipywidgets as widgets
-from IPython.display import display, HTML
-from IPython.display import Image
+from IPython.display import Image, Audio, display, HTML
 
+r_smp = 44100
+
+
+
+# CURRENT CORE FUNCTIONS
+def vdir(directory): #verify a directory exists, if not make it
+    if not os.path.exists(directory): os.mkdir(directory)
+    return directory
+def vdirs(directory1,directory2):
+    return vdir(os.path.join(directory1,directory2))
+def vdir_batch(dirs):
+    return (vdir(d) for d in dirs)
+def vdirs_batch(parent_dir,subdirs):
+    return (vdirs(parent_dir,subdir) for subdir in subdirs)
 def flat(bl):
     return [v for l in bl for v in l] #flattens a list of lists into just a list
-def i_str(i):
-    return '0'+str(i) if i<10 else str(i) #makes 0,1,2,...13,14,etc into 00,01,02,...,13,14,etc. I use it for file saving purposes
-def reduce_seq(s,xlr):
-    return s if len(np.shape(s))==1 else s[:,xlr] #takes in a sequence and reduces it to a 1d list only if it is 2d and based on the LRB parameter
+def attempt_instantiation(pdict,param_str,except_val): #attempts instantiating param = pdict[param_str] and if there is no pdict entry it sets param=except_val
+    try:
+        p=pdict[param_str]
+    except:
+        p=except_val
+    return p
+def batch_attempt_instantiation(pdict,params,exceptions):
+    return (attempt_instantiation(pdict,params[i],exceptions[i]) for i in range(len(params)))
+def train_val_test_split(x,y,trn_size=0.7):
+    x_trn,x_vts,y_trn,y_vts=train_test_split(x,y,test_size=1-trn_size)
+    x_val,x_tst,y_val,y_tst=train_test_split(x_vts,y_vts,test_size=0.5)
+    return x_trn,x_val,x_tst,y_trn,y_val,y_tst
+
+#Spectrogram and Sequence Functions
 def normalize_seq(s):
     return s/(np.max(np.abs(s))+1e-8) #normalizes sequence s
-def xlr(lrb):
-    return 0 if lrb=='L' else 1 if lrb=='R' else np.random.randint(2) #used to read the left or right audio parameter quickly
-def meme(lnk,txt): #displays a hyperlink to a meme with text txt
-    display(HTML("""<a href={link}>{text}</a>""".format(link=lnk,text=txt)))
-def pydub_to_np(audio, r_smp=44100): #Converts pydub audio segment into np.float32 of shape [duration_in_seconds*sample_rate, channels], where each value is in range [-1.0, 1.0]. Returns audio_np_array
-    audio.set_frame_rate(r_smp)
-    return np.array(audio.get_array_of_samples(), dtype=np.float32).reshape((-1, audio.channels)) / (1 << (8 * audio.sample_width - 1))
-def sequence_to_spectrogram(s,r_smp,v_res,f_len,t_len): #takes in a sequence (1 ch) and ouputs it as a log spectrogram in greyscale (1 ch)
-    _, _, spectrogramx = signal.spectrogram(s,r_smp,nperseg=v_res)
-    log_spectrogram=np.log10(spectrogramx[:f_len,:t_len],out=spectrogramx[:f_len,:t_len],where=spectrogramx[:f_len,:t_len] > 0)
-    diff=np.max(log_spectrogram)-np.min(log_spectrogram)
-    spectrogram=(log_spectrogram-np.min(log_spectrogram))/diff if diff!=0 else log_spectrogram-np.min(log_spectrogram)
-    return spectrogram
 def normalize_spectrogram(sp):
     sp = sp - np.min(sp)
     sp = sp/(np.max(sp)+1e-8)
     return sp
-def quick_spectrogram(s,r_smp=44100,v_res=2**9): #uses default values for everything so you only need to give it a segment of samples
-    t_len=int((len(s)-(v_res/8))/(v_res*7/8))
-    f_len=int(.75 * v_res/2)+1 #70
-    return sequence_to_spectrogram(s,r_smp,v_res,f_len,t_len)
-def quick_sound(s,r_smp=44100): #similarly make a sound from a segment using defaults
-    wav_io = io.BytesIO()
-    scipy.io.wavfile.write(wav_io,r_smp, s)     #creates a quick audio snippet out of the segment
-    wav_io.seek(0)
-    return AudioSegment.from_wav(wav_io)
+def quick_spectrogram(s,r_smp=r_smp,v_res,return_ft=False,flip=True)#f_len,t_len): #takes in a sequence (1 ch) and ouputs it as a log spectrogram in greyscale (1 ch)
+    f, t, spi = signal.spectrogram(s,r_smp,nperseg=v_res)
+    spl=np.log10(spi,out=spi,where=spi>0)#spectrogramx[:f_len,:t_len],out=spectrogramx[:f_len,:t_len],where=spectrogramx[:f_len,:t_len] > 0)
+    spl2=normalize_spectrogram(spl)
+    spo=np.flip(spl2,axis=0) if flip else spl2
+    return (f,t,spo) if return_ft else spo
 def quick_plot(sp): #make a quick plot using default values
     plt.figure(figsize=(20, 5))
     plt.imshow(sp,interpolation='nearest',aspect='auto')
     plt.show()
-def quick_example(s,r_smp=44100,export_filename='quick_example.wav'): #does a quickplot and quicksound on sequence s
-    quick_plot(quick_spectrogram(s,r_smp))
-    def play_sound(arg):
-        sound=quick_sound(s,r_smp)
-        play(sound)
-    def save_sound(arg):
-        sound=quick_sound(s,r_smp)
-        sound.export(export_filename,format='wav')
-        print("saved to "+export_filename)
-    play_button=widgets.Button(description='Play Audio')
-    play_button.on_click(play_sound)
-    display(play_button)
-    save_button=widgets.Button(description='Save Audio')
-    save_button.on_click(save_sound)
-    display(save_button)
+def quick_plots(sps,n_cols=5):
+    n_rows=int(np.ceil(len(sps)/n_cols))
+    fig,ax=plt.subplots(n_rows,n_cols,figsize=(20,n_rows*2))
+    for row in range(n_rows):
+        for col in range(n_cols):
+            drc=row*n_cols+col
+            try:
+                sp=sps[drc]
+                ax[row,col].imshow(sp,interpolation='nearest',aspect='auto')
+                ax[row,col].set_xticklabels([])
+                ax[row,col].set_yticklabels([])
+                ax[row,col].set_xlabel(drc)
+            except:
+                None
+def quick_example(s,r_smp=r_smp): #does a quickplot and quicksound on sequence s
+    quick_plot(quick_spectrogram(s,r_smp=r_smp))
+    display(Audio(s,rate=r_smp))
+def quick_examples(ss,n_cols=5):
+    sps=[quick_spectrogram(s) for s in ss]
+    quick_plots(sps,n_cols=n_cols)
+def add_vertical_line(sp,position):
+    h,w=sp.shape
+    thickness=1+w//300
+    ind=int(position*w)
+    if ind+thickness>w:
+        ind=w-thickness-1
+    sp[:,ind:ind+thickness]=0
+    return sp
+
+    
+
+
+
+
+
+
+
+# EXTRAS
 def decimate(s,new_rate,old_rate=44100): #rough downsampling from one freq to a new lower one, I made this becasue scipy.signal.decimate only does integer downsampling, mine is general
     skp=old_rate/new_rate
     new_s,sp=[],0 
@@ -85,49 +112,22 @@ def multiple_filter(funcs,params,ai): #iterates a list of single parameter funct
     for i in range(len(params)):
         a=func_d[funcs[i]](a,params[i])
     return a
-def vdir(directory): #verify a directory exists, if not make it
-    if not os.path.exists(directory): os.mkdir(directory)
-    return directory
-def vdirs(directory1,directory2):
-    return vdir(os.path.join(directory1,directory2))
-
-
 def norm_seq_to_spg(s,r_smp,v_res,f_len,t_len,filt=[]):
     if filt==[]: filt=np.zeros(f_len)
     s = normalize_seq(s) #first normalize the window
-    sp = sequence_to_spectrogram(s,r_smp,v_res,f_len,t_len) - np.repeat(filt[:,np.newaxis],t_len,axis=1)
+    sp = quick_spectrogram(s,r_smp=r_smp,v_res=v_res) - np.repeat(filt[:,np.newaxis],t_len,axis=1)
     return normalize_spectrogram(sp)
-
-def vdir_batch(dirs):
-    return (vdir(d) for d in dirs)
-def vdirs_batch(parent_dir,subdirs):
-    return (vdirs(parent_dir,subdir) for subdir in subdirs)
 def dropout_filter(sp,thr=0.75): #a filter that drops any pixel values below the threshold thr down to 0, e.g. [0,0.3,0.7,0.8,0.3] would become [0,0,0,0.8,0] for thr=0.75
     max_pixel=np.max(sp)
     return sp*(sp>thr*max_pixel)
-def get_spectrogram_dims(pdict): #returns the default spectrogram dims for a given pdict using scipy's values unless the dims are resized using pdict['rd']
-    height = int((int(pdict['w_sec']*pdict['r_smp'])-(pdict['vres']/8))/(pdict['vres']*7/8))
-    width = int(.75 * pdict['vres']/2)+1
-    shape=(height,width)
-    resize_div=attempt_instantiation(pdict,'rd',0)
-    if resize_div>0:
-        shape=tuple((np.array(shape)//resize_div)*resize_div)
-    return shape
-def attempt_instantiation(pdict,param_str,except_val): #attempts instantiating param = pdict[param_str] and if there is no pdict entry it sets param=except_val
-    try:
-        p=pdict[param_str]
-    except:
-        p=except_val
-    return p
 def average_frequency_band_filter(data, pdict): #creates a custom bandpass filter using a spectrogram of the entire data file data_array[dind]=data
     v_res=pdict['vres']
     t_arr=int((len(data)-(v_res/8))/(v_res*7/8)) 
     f_len=int(.75 * v_res/2)+1
     carr=data[:,xlr(pdict['LRB'])]
-    total_spec=sequence_to_spectrogram(carr,pdict['r_smp'],v_res,f_len,t_arr)
+    total_spec=quick_spectrogram(carr,r_smp=pdict['r_smp'],v_res=v_res)
     mn=np.mean(total_spec,axis=-1)
     return mn
-
 # Data Augmentation Functions
 def scale_arr(arr,sc): #same as decimate but with a range of sc=0.0001 to 1
     if sc==0: sc=0.0001 #handles accidental true zero
@@ -159,7 +159,6 @@ def random_augmenter(sp,deg,sig_prob=0.5): #automatically augments spectrogram s
     places=random_sigmoid() if np.random.random()<sig_prob else random_line(mi=0,bi=0.5)
     #plt.plot(scales);plt.plot(places);plt.ylabel("placement and scaling");plt.legend(['scales','places']);plt.show()
     return scpl_sp(sp,scales,places) if np.random.random()<0.66 else sp  #make a 1/3 chance of just spitting back the original spectrogram instead of the augmented one
-
 #metadata functions
 def get_lengths_under_ws(lengths,r_smp,w): #grabs a reverse list of length indices for lengths less than w seconds
     lengths_under_ws=[i for i,length in enumerate(np.array(lengths)/r_smp) if length<w]
@@ -204,7 +203,14 @@ def equalize_class_groups(class_groups): #Our generator picks from all available
             class_groups[j].pop(ind)
             
             
-#0.0.5
+            
+# LEGACY FUNCTIONS
+def xlr(lrb):
+    return 0 if lrb=='L' else 1 if lrb=='R' else np.random.randint(2) #used to read the left or right audio parameter quickly
+def reduce_seq(s,xlr):
+    return s if len(np.shape(s))==1 else s[:,xlr] #takes in a sequence and reduces it to a 1d list only if it is 2d and based on the LRB parameter
+def i_str(i):
+    return '0'+str(i) if i<10 else str(i) #makes 0,1,2,...13,14,etc into 00,01,02,...,13,14,etc. I use it for file saving purposes
 def plot_generator(pdict,spectrograms,ls,classes,sps=[],files_as_labels=True):
     nP, nK = pdict['numP'], pdict['numK']
     fig, ax = plt.subplots(nP, nK, figsize=(20,nP*2))
@@ -222,8 +228,6 @@ def plot_generator(pdict,spectrograms,ls,classes,sps=[],files_as_labels=True):
                 else:
                     ax[p,k].set_xlabel(""+str(sps[2*idx])+"    "+str(sps[2*idx+1]//(pdict['r_smp']*60)))
         ax[p,0].set_ylabel(classes[label])
-def batch_attempt_instantiation(pdict,params,exceptions):
-    return (attempt_instantiation(pdict,params[i],exceptions[i]) for i in range(len(params)))
 def param2name(pdict):
     name = []
     for key in pdict.keys():

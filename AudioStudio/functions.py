@@ -43,7 +43,7 @@ def normalize_spectrogram(sp):
     sp = sp - np.min(sp)
     sp = sp/(np.max(sp)+1e-8)
     return sp
-def quick_spectrogram(s,r_smp=r_smp,v_res,return_ft=False,flip=True)#f_len,t_len): #takes in a sequence (1 ch) and ouputs it as a log spectrogram in greyscale (1 ch)
+def quick_spectrogram(s,r_smp=r_smp,v_res=2**9,return_ft=False,flip=True)#f_len,t_len): #takes in a sequence (1 ch) and ouputs it as a log spectrogram in greyscale (1 ch)
     f, t, spi = signal.spectrogram(s,r_smp,nperseg=v_res)
     spl=np.log10(spi,out=spi,where=spi>0)#spectrogramx[:f_len,:t_len],out=spectrogramx[:f_len,:t_len],where=spectrogramx[:f_len,:t_len] > 0)
     spl2=normalize_spectrogram(spl)
